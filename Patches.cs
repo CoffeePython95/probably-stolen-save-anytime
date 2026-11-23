@@ -212,7 +212,7 @@ internal static class SaveFilesScanAndRegisterOrphansPatch
     [HarmonyPrefix]
     internal static void Prefix()
     {
-        ManualSaveController.CleanupStaleTempFiles();
+        ManualSaveController.CleanupStaleTempFile();
     }
 }
 

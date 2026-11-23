@@ -13,6 +13,11 @@ internal static class Settings
     private static ConfigEntry<string> saveKey;
     private static ConfigEntry<string> loadKey;
 
+    private static string cachedSaveValue;
+    private static string cachedLoadValue;
+    private static KeyCode cachedSaveKey = KeyCode.F5;
+    private static KeyCode cachedLoadKey = KeyCode.F9;
+
     internal static void Initialize()
     {
         ModConfig config = ModHelper.GetConfig(ModEntry.ModId);
@@ -54,12 +59,32 @@ internal static class Settings
 
     internal static KeyCode SaveKey
     {
-        get { return ParseKey(saveKey, KeyCode.F5); }
+        get
+        {
+            string value = saveKey != null ? saveKey.Value : null;
+            if (value != cachedSaveValue)
+            {
+                cachedSaveValue = value;
+                cachedSaveKey = ParseKey(value, KeyCode.F5);
+            }
+
+            return cachedSaveKey;
+        }
     }
 
     internal static KeyCode LoadKey
     {
-        get { return ParseKey(loadKey, KeyCode.F9); }
+        get
+        {
+            string value = loadKey != null ? loadKey.Value : null;
+            if (value != cachedLoadValue)
+            {
+                cachedLoadValue = value;
+                cachedLoadKey = ParseKey(value, KeyCode.F9);
+            }
+
+            return cachedLoadKey;
+        }
     }
 
     internal static string SaveKeyName
@@ -168,21 +193,29 @@ internal static class Settings
             return false;
         }
 
-        string name = key.ToString();
-        return !name.StartsWith("Mouse", StringComparison.Ordinal) &&
-               !name.StartsWith("Joystick", StringComparison.Ordinal) &&
-               !name.StartsWith("Gamepad", StringComparison.Ordinal);
+        int value = (int)key;
+        if (value >= (int)KeyCode.Mouse0 && value <= (int)KeyCode.Mouse6)
+        {
+            return false;
+        }
+
+        if (value >= (int)KeyCode.JoystickButton0 && value <= (int)KeyCode.Joystick8Button19)
+        {
+            return false;
+        }
+
+        return true;
     }
 
-    private static KeyCode ParseKey(ConfigEntry<string> entry, KeyCode fallback)
+    private static KeyCode ParseKey(string value, KeyCode fallback)
     {
-        if (entry == null || string.IsNullOrEmpty(entry.Value))
+        if (string.IsNullOrEmpty(value))
         {
             return fallback;
         }
 
         KeyCode key;
-        if (Enum.TryParse(entry.Value, true, out key))
+        if (Enum.TryParse(value, true, out key))
         {
             return key;
         }

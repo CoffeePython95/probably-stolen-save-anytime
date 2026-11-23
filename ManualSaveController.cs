@@ -23,7 +23,7 @@ internal static class ManualSaveController
     // stops key spamming from queueing another scene load while the new scene
     // is still initializing.
     private const float LoadBlockSeconds = 4f;
-    private const float LoadSettleSeconds = 0.75f;
+    private const float LoadSettleSeconds = 1.5f;
     private const float LoadTimeoutSeconds = 15f;
 
     private static bool saving;
@@ -53,7 +53,11 @@ internal static class ManualSaveController
         loadBlockedUntil = Mathf.Max(loadBlockedUntil, now + LoadSettleSeconds);
 
         ManualHistoryStore.Initialize();
-        CleanupStaleTempFiles();
+
+        // This runs on every load, so avoid a save-folder directory scan here.
+        // The fixed temporary slot name is enough; the full scan runs at
+        // startup and after each manual save.
+        CleanupStaleTempFile();
     }
 
     internal static void OnDisabled()
@@ -62,7 +66,7 @@ internal static class ManualSaveController
         loading = false;
         loadKeyLatch = false;
         loadBlockedUntil = 0f;
-        CleanupStaleTempFiles();
+        CleanupStaleTempFile();
     }
 
     /// <summary>
@@ -103,11 +107,10 @@ internal static class ManualSaveController
     }
 
     /// <summary>
-    /// Deletes only the temporary slot's files. This is safe to call while the
-    /// game is rebuilding its save index and prevents an orphaned temporary
-    /// save from being imported as a real slot.
+    /// Lightweight cleanup for the normal load path. It only checks the fixed
+    /// temporary slot filename, so it does not enumerate the save folder.
     /// </summary>
-    internal static void CleanupStaleTempFiles()
+    internal static void CleanupStaleTempFile()
     {
         try
         {
@@ -124,6 +127,15 @@ internal static class ManualSaveController
                 ModEntry.Log.Warning("Could not remove a stale temporary save file: " + ex.Message);
             }
         }
+    }
+
+    /// <summary>
+    /// Full cleanup for startup and after a manual save. Also removes any
+    /// temporary history files left by an interrupted save.
+    /// </summary>
+    internal static void CleanupStaleTempFiles()
+    {
+        CleanupStaleTempFile();
 
         try
         {

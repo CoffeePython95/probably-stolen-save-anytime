@@ -346,8 +346,10 @@ internal static class PauseMenuUI
             string typeName = behaviour.GetType().Name;
             if (typeName == "LocalizeStringEvent" || typeName == "TMPLocalizer")
             {
+                // TMPLocalizer depends on LocalizeStringEvent, so destroying
+                // the event component logs a dependency error. Disabling both
+                // is enough: they can no longer overwrite the button label.
                 behaviour.enabled = false;
-                UnityEngine.Object.Destroy(behaviour);
             }
         }
     }

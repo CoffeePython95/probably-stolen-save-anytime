@@ -53,7 +53,7 @@ public sealed class ModEntry : IMod
         }
 
         Enabled = true;
-        ModHook.OnGameLoadedNormal += OnGameLoaded;
+        ModHook.OnGameLoadedLate += OnGameLoaded;
 
         try
         {
@@ -75,7 +75,7 @@ public sealed class ModEntry : IMod
         }
 
         Enabled = false;
-        ModHook.OnGameLoadedNormal -= OnGameLoaded;
+        ModHook.OnGameLoadedLate -= OnGameLoaded;
 
         try
         {
