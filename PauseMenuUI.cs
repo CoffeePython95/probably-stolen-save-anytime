@@ -19,6 +19,12 @@ internal static class PauseMenuUI
             return;
         }
 
+        if (NewGameData.Instance == null || NewGameData.Instance.isShowcase)
+        {
+            Remove();
+            return;
+        }
+
         try
         {
             Transform escapeMenu = FindEscapeMenu(manager.menuPanel.transform);

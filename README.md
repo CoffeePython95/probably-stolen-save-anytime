@@ -42,6 +42,8 @@ restart the game. Pass `-GameDir` if the game is installed elsewhere.
 
 ## Notes
 
+- Save and quick load are only active in a live shop run. The main menu and
+  showcase mode do not expose the mod's save button or the F5/F6 actions.
 - The mod needs the `files` capability because it moves save files.
 - Loading a manual save reloads the `InventoryScene`, which avoids duplicating
   items that are already present in the live scene.
