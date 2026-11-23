@@ -395,7 +395,9 @@ internal static class ManualSaveController
             return false;
         }
 
-        if (NewGameData.Instance == null || NewGameData.Instance.isShowcase)
+        if (NewGameData.Instance == null ||
+            NewGameData.Instance.isShowcase ||
+            NewGameData.Instance.isInMainMenu)
         {
             return false;
         }
@@ -425,7 +427,9 @@ internal static class ManualSaveController
             return false;
         }
 
-        if (NewGameData.Instance == null || NewGameData.Instance.isShowcase)
+        if (NewGameData.Instance == null ||
+            NewGameData.Instance.isShowcase ||
+            NewGameData.Instance.isInMainMenu)
         {
             return false;
         }

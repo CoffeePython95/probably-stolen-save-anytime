@@ -19,7 +19,9 @@ internal static class PauseMenuUI
             return;
         }
 
-        if (NewGameData.Instance == null || NewGameData.Instance.isShowcase)
+        if (NewGameData.Instance == null ||
+            NewGameData.Instance.isShowcase ||
+            NewGameData.Instance.isInMainMenu)
         {
             Remove();
             return;

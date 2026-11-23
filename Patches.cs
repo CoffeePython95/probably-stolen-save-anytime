@@ -280,7 +280,9 @@ internal static class StoreUIManagerUpdateHotkeysPatch
                 return;
             }
 
-            if (NewGameData.Instance == null || NewGameData.Instance.isShowcase)
+            if (NewGameData.Instance == null ||
+                NewGameData.Instance.isShowcase ||
+                NewGameData.Instance.isInMainMenu)
             {
                 return;
             }
