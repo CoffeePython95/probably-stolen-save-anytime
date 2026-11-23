@@ -23,7 +23,7 @@ internal static class ManualSaveController
     // stops key spamming from queueing another scene load while the new scene
     // is still initializing.
     private const float LoadBlockSeconds = 4f;
-    private const float LoadSettleSeconds = 1.5f;
+    private const float LoadSettleSeconds = 3f;
     private const float LoadTimeoutSeconds = 15f;
 
     private static bool saving;
@@ -215,7 +215,7 @@ internal static class ManualSaveController
 
         if (IsLoading)
         {
-            message = "A load is already in progress. Please wait a moment.";
+            message = "Please wait a moment before loading again.";
             return false;
         }
 
