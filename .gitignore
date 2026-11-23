@@ -1,0 +1,21 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Packaged builds
+dist/
+artifacts/
+*.zip
+
+# Local analysis artifacts
+docs/decompiled/
+reference/
+
+# OS/editor noise
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/

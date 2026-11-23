@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Manifest>
+  <ID>save_anytime</ID>
+  <Name>Save Anytime</Name>
+  <Author>Patry</Author>
+  <ModVersion>0.1.0</ModVersion>
+  <Description>Adds a manual save to the pause menu (F5 by default) and a quick load key (F6 by default). Manual saves appear at the top of the run's earlier-save list, just below the latest save.</Description>
+
+  <GameVersions>
+    <Version>0.46D</Version>
+  </GameVersions>
+
+  <Prerequisites />
+  <Assemblies>
+    <Assembly>SaveAnytime.dll</Assembly>
+  </Assemblies>
+  <Capabilities>
+    <Capability>files</Capability>
+  </Capabilities>
+</Manifest>
