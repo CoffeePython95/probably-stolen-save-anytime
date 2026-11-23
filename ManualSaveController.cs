@@ -309,10 +309,14 @@ internal static class ManualSaveController
             version = PlayerStore.VERSION
         };
 
+        string previousManual = ManualHistoryStore.Get(slotId);
+
         try
         {
             List<SaveHistoryEntry> history = SaveFiles.LoadHistory(slotId);
-            history.RemoveAll(e => e == null || e.file == fileName);
+            history.RemoveAll(e => e == null ||
+                e.file == fileName ||
+                (!string.IsNullOrEmpty(previousManual) && e.file == previousManual));
             history.Insert(0, entry);
             SaveFiles.IndexSave(HistoryIndexPrefix + slotId, history);
         }
@@ -330,6 +334,7 @@ internal static class ManualSaveController
         ManualHistoryStore.Set(slotId, fileName);
         SafeSetModData(ModDataFileKey, fileName);
         SafeSetModData(ModDataSlotKey, slotId.ToString(CultureInfo.InvariantCulture));
+        DeletePreviousManual(slotId, previousManual, fileName);
 
         if (ModEntry.Log != null)
         {
@@ -338,6 +343,44 @@ internal static class ManualSaveController
 
         message = "Game saved.";
         return true;
+    }
+
+    private static void DeletePreviousManual(int slotId, string previous, string current)
+    {
+        if (string.IsNullOrEmpty(previous) || previous == current)
+        {
+            return;
+        }
+
+        // Only delete a file that is a valid history name for this slot. This
+        // keeps a corrupted or mismatched map entry from removing a real save.
+        if (!IsHistoryFileForSlot(previous, slotId))
+        {
+            return;
+        }
+
+        try
+        {
+            string path = SaveFiles.AbsolutePath(previous);
+            if (!File.Exists(path))
+            {
+                return;
+            }
+
+            SaveFiles.WithIORetry(delegate { File.Delete(path); });
+
+            if (ModEntry.Log != null)
+            {
+                ModEntry.Log.Log("Removed the previous manual save " + previous + ".");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (ModEntry.Log != null)
+            {
+                ModEntry.Log.Warning("Could not remove the previous manual save " + previous + ": " + ex.Message);
+            }
+        }
     }
 
     private static bool CanSave()

@@ -6,8 +6,10 @@ A **Probably Stolen** mod that adds manual saving and quick loading to a run.
 
 - Adds a **Save Game** button to the pause menu.
 - Press **F5** to save at any time during a run.
-- Press **F6** to load the latest manual save.
-- Manual saves appear as the first entry in the run's earlier-save list,
+- Press **F6** to load the manual save.
+- Each run keeps exactly one manual save. A new manual save replaces the
+  previous one.
+- The manual save appears as the first entry in the run's earlier-save list,
   directly below the main latest-save row in the load menu.
 - Both keys can be changed in the mod's settings or in the game's keybind
   options.
@@ -19,12 +21,13 @@ file to a valid earlier-day history filename, and removes the temporary slot's
 preview and index entries. The manual save is a regular game save, so the
 normal load menu can open it too.
 
-The mod keeps a small map of the newest manual save for each slot in
+The mod keeps a small map of the manual save for each slot in
 `ModData\save_anytime\manual_history.txt`. A Harmony postfix pins that entry to
 the top of the history list when the load menu reads it, and the entry is
-protected when the game trims old history saves. The save also records its own
-filename in the run's mod data, so the in-game quick load can recover the entry
-if the map is lost.
+protected when the game trims old history saves. When a new manual save is
+made, the previous manual save is removed from the history list and deleted.
+The save also records its own filename in the run's mod data, so the in-game
+quick load can recover the entry if the map is lost.
 
 ## Build and install
 
