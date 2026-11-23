@@ -11,7 +11,8 @@ A **Probably Stolen** mod that adds manual saving and quick loading to a run.
   previous one.
 - The manual save appears as the first entry in the run's earlier-save list,
   directly below the main latest-save row in the load menu.
-- The manual save row is highlighted in a contrasting gold colour.
+- The manual save row is highlighted in a contrasting gold colour and labelled
+  `[Quicksave]`.
 - Both keys can be changed in the mod's settings or in the game's keybind
   options.
 

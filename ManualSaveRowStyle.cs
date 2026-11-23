@@ -71,8 +71,10 @@ internal static class ManualSaveRowStyle
         background.color = RowBackground;
         background.raycastTarget = false;
 
-        ColorText(row.Find("Info"), InfoColor);
+        Transform info = row.Find("Info");
+        ColorText(info, InfoColor);
         ColorText(row.Find("Date"), DateColor);
+        ApplyQuicksaveTag(row, info);
 
         Transform rule = row.Find("Rule");
         if (rule != null)
@@ -91,6 +93,73 @@ internal static class ManualSaveRowStyle
             if (loadBackground != null)
             {
                 loadBackground.color = ButtonBackground;
+            }
+        }
+    }
+
+    private static void ApplyQuicksaveTag(Transform row, Transform info)
+    {
+        Transform existing = row.Find("QuicksaveTag");
+        TextMeshProUGUI tag;
+
+        if (existing == null)
+        {
+            if (info == null)
+            {
+                return;
+            }
+
+            GameObject clone = UnityEngine.Object.Instantiate(info.gameObject, row);
+            clone.name = "QuicksaveTag";
+            DisableLocalizers(clone);
+
+            RectTransform rect = clone.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                rect.anchorMin = new Vector2(0f, 1f);
+                rect.anchorMax = new Vector2(0f, 1f);
+                rect.pivot = new Vector2(0f, 1f);
+                rect.anchoredPosition = Vector2.zero;
+                rect.sizeDelta = new Vector2(220f, 18f);
+            }
+
+            tag = clone.GetComponent<TextMeshProUGUI>();
+        }
+        else
+        {
+            tag = existing.GetComponent<TextMeshProUGUI>();
+        }
+
+        if (tag == null)
+        {
+            return;
+        }
+
+        tag.text = "[Quicksave]";
+        tag.color = InfoColor;
+        tag.fontSize = 14f;
+        tag.enableAutoSizing = false;
+        tag.enableWordWrapping = false;
+        tag.alignment = TextAlignmentOptions.MidlineLeft;
+        tag.overflowMode = TextOverflowModes.Overflow;
+        tag.raycastTarget = false;
+    }
+
+    private static void DisableLocalizers(GameObject clone)
+    {
+        MonoBehaviour[] behaviours = clone.GetComponents<MonoBehaviour>();
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            MonoBehaviour behaviour = behaviours[i];
+            if (behaviour == null)
+            {
+                continue;
+            }
+
+            string typeName = behaviour.GetType().Name;
+            if (typeName == "LocalizeStringEvent" || typeName == "TMPLocalizer")
+            {
+                behaviour.enabled = false;
             }
         }
     }
