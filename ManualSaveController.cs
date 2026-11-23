@@ -19,19 +19,39 @@ internal static class ManualSaveController
     private const string HistoryIndexPrefix = "history_";
     private const string PreviewIndexPrefix = "preview_";
 
+    // Keep the load key blocked for a few seconds after a reload starts. This
+    // stops key spamming from queueing another scene load while the new scene
+    // is still initializing.
+    private const float LoadBlockSeconds = 4f;
+    private const float LoadSettleSeconds = 0.75f;
+    private const float LoadTimeoutSeconds = 15f;
+
     private static bool saving;
     private static bool loading;
+    private static bool loadKeyLatch;
     private static float loadStartedAt;
+    private static float loadBlockedUntil;
 
     internal static bool IsLoading
     {
-        get { return loading && Time.realtimeSinceStartup - loadStartedAt < 15f; }
+        get
+        {
+            float now = Time.realtimeSinceStartup;
+            return (loading && now - loadStartedAt < LoadTimeoutSeconds) || now < loadBlockedUntil;
+        }
     }
 
     internal static void OnGameLoaded()
     {
         saving = false;
         loading = false;
+        loadKeyLatch = false;
+
+        // Keep the quick load disabled briefly after the scene has finished
+        // loading, even if the initial cooldown already elapsed.
+        float now = Time.realtimeSinceStartup;
+        loadBlockedUntil = Mathf.Max(loadBlockedUntil, now + LoadSettleSeconds);
+
         ManualHistoryStore.Initialize();
         CleanupStaleTempFiles();
     }
@@ -40,7 +60,46 @@ internal static class ManualSaveController
     {
         saving = false;
         loading = false;
+        loadKeyLatch = false;
+        loadBlockedUntil = 0f;
         CleanupStaleTempFiles();
+    }
+
+    /// <summary>
+    /// Returns true once per press. A held load key stays latched until it is
+    /// released, so key repeat cannot queue another reload.
+    /// </summary>
+    internal static bool ShouldTriggerLoad(KeyCode key)
+    {
+        if (key == KeyCode.None)
+        {
+            loadKeyLatch = false;
+            return false;
+        }
+
+        bool held = Input.GetKey(key);
+        if (loadKeyLatch)
+        {
+            if (!held)
+            {
+                loadKeyLatch = false;
+            }
+
+            return false;
+        }
+
+        if (!Input.GetKeyDown(key))
+        {
+            return false;
+        }
+
+        loadKeyLatch = true;
+        return true;
+    }
+
+    internal static void ResetLoadKeyLatch()
+    {
+        loadKeyLatch = false;
     }
 
     /// <summary>
@@ -144,7 +203,7 @@ internal static class ManualSaveController
 
         if (IsLoading)
         {
-            message = "A load is already in progress.";
+            message = "A load is already in progress. Please wait a moment.";
             return false;
         }
 
@@ -200,8 +259,10 @@ internal static class ManualSaveController
 
         try
         {
+            float now = Time.realtimeSinceStartup;
             loading = true;
-            loadStartedAt = Time.realtimeSinceStartup;
+            loadStartedAt = now;
+            loadBlockedUntil = now + LoadBlockSeconds;
 
             if (ModEntry.Log != null)
             {
@@ -229,6 +290,7 @@ internal static class ManualSaveController
         catch (Exception ex)
         {
             loading = false;
+            loadBlockedUntil = 0f;
             message = "Load failed: " + ex.Message;
             if (ModEntry.Log != null)
             {

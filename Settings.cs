@@ -40,7 +40,7 @@ internal static class Settings
 
         loadKey = config.Define(
             "load_key",
-            "F6",
+            "F9",
             SectionKeybinds,
             () => "Load game key",
             null,
@@ -59,7 +59,7 @@ internal static class Settings
 
     internal static KeyCode LoadKey
     {
-        get { return ParseKey(loadKey, KeyCode.F6); }
+        get { return ParseKey(loadKey, KeyCode.F9); }
     }
 
     internal static string SaveKeyName
@@ -69,7 +69,7 @@ internal static class Settings
 
     internal static string LoadKeyName
     {
-        get { return KeyDisplay(loadKey != null ? loadKey.Value : "F6"); }
+        get { return KeyDisplay(loadKey != null ? loadKey.Value : "F9"); }
     }
 
     internal static void SetSaveKey(KeyCode key)

@@ -6,11 +6,12 @@ A **Probably Stolen** mod that adds manual saving and quick loading to a run.
 
 - Adds a **Save Game** button to the pause menu.
 - Press **F5** to save at any time during a run.
-- Press **F6** to load the manual save.
+- Press **F9** to load the manual save.
 - Each run keeps exactly one manual save. A new manual save replaces the
   previous one.
 - The manual save appears as the first entry in the run's earlier-save list,
   directly below the main latest-save row in the load menu.
+- The manual save row is highlighted in a contrasting gold colour.
 - Both keys can be changed in the mod's settings or in the game's keybind
   options.
 
@@ -43,9 +44,11 @@ restart the game. Pass `-GameDir` if the game is installed elsewhere.
 ## Notes
 
 - Save and quick load are only active in a live shop run. The main menu and
-  showcase mode do not expose the mod's save button or the F5/F6 actions.
+  showcase mode do not expose the mod's save button or the F5/F9 actions.
 - The mod needs the `files` capability because it moves save files.
 - Loading a manual save reloads the `InventoryScene`, which avoids duplicating
   items that are already present in the live scene.
-- If no manual save exists for the current run, **F6** loads the run's latest
+- If no manual save exists for the current run, **F9** loads the run's latest
   regular save instead.
+- Quick load ignores repeated presses while a reload is in progress and for a
+  few seconds afterwards, so F9 cannot queue multiple scene reloads.

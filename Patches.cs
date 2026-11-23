@@ -237,6 +237,53 @@ internal static class SaveFilesRestoreFromHistoryPatch
 }
 
 /// <summary>
+/// Colours the manual save's history row in the vanilla load menu.
+/// </summary>
+[HarmonyPatch(typeof(LoadGameUI), "BuildExpanded")]
+internal static class LoadGameUIBuildExpandedPatch
+{
+    [HarmonyPostfix]
+    internal static void Postfix(object[] __args)
+    {
+        if (!ModEntry.Enabled || __args == null || __args.Length < 2)
+        {
+            return;
+        }
+
+        try
+        {
+            List<SaveHistoryEntry> history = __args[1] as List<SaveHistoryEntry>;
+            if (history == null || history.Count == 0)
+            {
+                return;
+            }
+
+            SaveHistoryEntry entry = history[0];
+            if (entry == null || !ManualHistoryStore.IsPinned(entry.file))
+            {
+                return;
+            }
+
+            CustomUIManager customUI = CustomUIManager.Instance;
+            CustomUIWindow window = customUI != null ? customUI.GetWindow(LoadGameUI.WINDOW_ID) : null;
+            if (window == null || window.root == null)
+            {
+                return;
+            }
+
+            ManualSaveRowStyle.Apply(window.root.transform, entry);
+        }
+        catch (Exception ex)
+        {
+            if (ModEntry.Log != null)
+            {
+                ModEntry.Log.Warning("Could not colour the manual save row: " + ex.Message);
+            }
+        }
+    }
+}
+
+/// <summary>
 /// Adds the Save button to the pause menu when it opens.
 /// </summary>
 [HarmonyPatch(typeof(EscapeUIManager), "OpenEscapeMenu", new Type[] { })]
@@ -314,24 +361,32 @@ internal static class StoreUIManagerUpdateHotkeysPatch
             KeyCode saveKey = Settings.SaveKey;
             KeyCode loadKey = Settings.LoadKey;
 
-            bool savePressed = Settings.IsKeyboardKey(saveKey) && Input.GetKeyDown(saveKey);
-            bool loadPressed = Settings.IsKeyboardKey(loadKey) && Input.GetKeyDown(loadKey);
-
-            if (savePressed && loadPressed)
+            if (saveKey == loadKey && saveKey != KeyCode.None)
             {
-                PauseMenuUI.Notify("Save and Load are bound to the same key.", "sec");
+                if (Settings.IsKeyboardKey(saveKey) && Input.GetKeyDown(saveKey))
+                {
+                    PauseMenuUI.Notify("Save and Load are bound to the same key.", "sec");
+                }
+
                 return;
             }
 
-            if (savePressed)
+            if (Settings.IsKeyboardKey(saveKey) && Input.GetKeyDown(saveKey))
             {
                 bool saved = ManualSaveController.SaveManual(out string message);
                 PauseMenuUI.ShowSaveFeedback(saved);
                 PauseMenuUI.Notify(message, saved ? "default" : "sec");
+                return;
             }
-            else if (loadPressed)
+
+            if (Settings.IsKeyboardKey(loadKey) && ManualSaveController.ShouldTriggerLoad(loadKey))
             {
                 bool loaded = ManualSaveController.LoadManual(out string message);
+                if (!loaded)
+                {
+                    ManualSaveController.ResetLoadKeyLatch();
+                }
+
                 PauseMenuUI.Notify(message, loaded ? "default" : "sec");
             }
         }
