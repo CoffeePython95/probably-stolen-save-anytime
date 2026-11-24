@@ -9,6 +9,18 @@ $root = $PSScriptRoot
 $project = Join-Path $root "SaveAnytime.csproj"
 $manifestPath = Join-Path $root "manifest.xml"
 
+[xml]$manifestXml = Get-Content $manifestPath -Raw
+$version = [string]$manifestXml.Manifest.ModVersion
+if (-not $version) {
+    throw "manifest.xml is missing <ModVersion>."
+}
+
+[xml]$projectXml = Get-Content $project -Raw
+$projectVersion = [string](@($projectXml.Project.PropertyGroup.Version)[0])
+if ($version -ne $projectVersion) {
+    throw "Version mismatch: manifest.xml has '$version' but SaveAnytime.csproj has '$projectVersion'."
+}
+
 if (-not $GameDir) {
     if ($env:PROBABLY_STOLEN_DIR) {
         $GameDir = $env:PROBABLY_STOLEN_DIR
@@ -50,7 +62,7 @@ if (-not $Dotnet -or -not (Test-Path $Dotnet)) {
     throw "dotnet was not found. Install the .NET 8 SDK or pass -Dotnet `"<path to dotnet.exe>`"."
 }
 
-Write-Host "Building SaveAnytime..."
+Write-Host "Building Save Anytime..."
 & $Dotnet build $project -c Release --nologo "-p:GameDir=$GameDir"
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet build failed with exit code $LASTEXITCODE."
@@ -69,8 +81,21 @@ if (Test-Path $dist) {
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 Copy-Item $assembly $dist
 Copy-Item $manifestPath $dist
+if (Test-Path (Join-Path $root "README.md")) {
+    Copy-Item (Join-Path $root "README.md") $dist
+}
+if (Test-Path (Join-Path $root "LICENSE")) {
+    Copy-Item (Join-Path $root "LICENSE") $dist
+}
+
+$archive = Join-Path $root "dist\SaveAnytime-v$version.zip"
+if (Test-Path $archive) {
+    Remove-Item $archive -Force
+}
+Compress-Archive -Path $dist -DestinationPath $archive -CompressionLevel Optimal
 
 Write-Host "Package: $dist"
+Write-Host "Release archive: $archive"
 
 if ($Install) {
     $target = Join-Path $GameDir "Mods\SaveAnytime"
