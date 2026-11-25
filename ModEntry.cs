@@ -37,7 +37,12 @@ public sealed class ModEntry : IMod
 
         try
         {
-            ManualSaveController.CleanupStaleTempFiles();
+            // Only check the fixed temporary slot name here. The full
+            // directory sweep runs from the ScanAndRegisterOrphans prefix,
+            // right before the game could import a stale temporary history
+            // file as a real run, so startup does not enumerate the save
+            // folder at all.
+            ManualSaveController.CleanupStaleTempFile();
         }
         catch (Exception ex)
         {

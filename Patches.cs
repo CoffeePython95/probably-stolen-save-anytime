@@ -212,7 +212,12 @@ internal static class SaveFilesScanAndRegisterOrphansPatch
     [HarmonyPrefix]
     internal static void Prefix()
     {
-        ManualSaveController.CleanupStaleTempFile();
+        // This runs after a crash before the game enumerates save_*.es3, so
+        // it is the right place for the full sweep: a stale temporary history
+        // file must be gone before ScanAndRegisterOrphans can turn it into a
+        // real slot. Keeping it out of Init removes a directory scan from
+        // every game startup.
+        ManualSaveController.CleanupStaleTempFiles();
     }
 }
 
@@ -322,6 +327,19 @@ internal static class StoreUIManagerUpdateHotkeysPatch
 
         try
         {
+            KeyCode saveKey = Settings.SaveKey;
+            KeyCode loadKey = Settings.LoadKey;
+
+            // Input polling is far cheaper than the UI-state checks below. Do
+            // it first so the postfix exits immediately on the many frames
+            // without a Save or Load key press.
+            bool savePressed = Settings.IsKeyboardKey(saveKey) && Input.GetKeyDown(saveKey);
+            bool loadPressed = Settings.IsKeyboardKey(loadKey) && ManualSaveController.ShouldTriggerLoad(loadKey);
+            if (!savePressed && !loadPressed)
+            {
+                return;
+            }
+
             if (__instance.IsTyping())
             {
                 return;
@@ -358,20 +376,13 @@ internal static class StoreUIManagerUpdateHotkeysPatch
                 }
             }
 
-            KeyCode saveKey = Settings.SaveKey;
-            KeyCode loadKey = Settings.LoadKey;
-
             if (saveKey == loadKey && saveKey != KeyCode.None)
             {
-                if (Settings.IsKeyboardKey(saveKey) && Input.GetKeyDown(saveKey))
-                {
-                    PauseMenuUI.Notify("Save and Load are bound to the same key.", "sec");
-                }
-
+                PauseMenuUI.Notify("Save and Load are bound to the same key.", "sec");
                 return;
             }
 
-            if (Settings.IsKeyboardKey(saveKey) && Input.GetKeyDown(saveKey))
+            if (savePressed)
             {
                 bool saved = ManualSaveController.SaveManual(out string message);
                 PauseMenuUI.ShowSaveFeedback(saved);
@@ -379,7 +390,7 @@ internal static class StoreUIManagerUpdateHotkeysPatch
                 return;
             }
 
-            if (Settings.IsKeyboardKey(loadKey) && ManualSaveController.ShouldTriggerLoad(loadKey))
+            if (loadPressed)
             {
                 bool loaded = ManualSaveController.LoadManual(out string message);
                 if (!loaded)
