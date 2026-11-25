@@ -5,9 +5,9 @@ using UnityEngine;
 namespace SaveAnytime;
 
 /// <summary>
-/// Shows temporary feedback on the pause-menu save button.
+/// Shows temporary feedback on a pause-menu action button.
 /// </summary>
-public sealed class SaveButtonFeedback : MonoBehaviour
+public sealed class PauseButtonFeedback : MonoBehaviour
 {
     private TextMeshProUGUI label;
     private string idleText = "Save Game";
@@ -42,6 +42,21 @@ public sealed class SaveButtonFeedback : MonoBehaviour
     internal void ShowFailed()
     {
         Show("Save failed", 2f);
+    }
+
+    internal void ShowLoadFailed()
+    {
+        Show("Load failed", 2f);
+    }
+
+    internal void ShowNoQuicksave()
+    {
+        Show("No Quicksave", 2f);
+    }
+
+    internal void ShowText(string text, float seconds)
+    {
+        Show(text, seconds);
     }
 
     private void Show(string text, float seconds)

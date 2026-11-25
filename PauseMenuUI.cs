@@ -7,9 +7,11 @@ namespace SaveAnytime;
 
 internal static class PauseMenuUI
 {
-    internal const string ButtonName = "ButtonSaveGame";
+    internal const string SaveButtonName = "ButtonSaveGame";
+    internal const string LoadButtonName = "ButtonLoadQuicksave";
 
-    private const string IdleText = "Save Game";
+    private const string SaveIdleText = "Save Game";
+    private const string LoadIdleText = "Load Quicksave";
     private const float PanelHeightIncrease = 50f;
 
     internal static void Ensure(EscapeUIManager manager)
@@ -35,20 +37,6 @@ internal static class PauseMenuUI
                 return;
             }
 
-            Transform existing = escapeMenu.Find(ButtonName);
-            if (existing != null)
-            {
-                EnsurePanelHeight(escapeMenu);
-
-                SaveButtonFeedback existingFeedback = existing.GetComponent<SaveButtonFeedback>();
-                if (existingFeedback != null)
-                {
-                    existingFeedback.ResetLabel();
-                }
-
-                return;
-            }
-
             Transform template = escapeMenu.Find("ButtonOption");
             if (template == null)
             {
@@ -60,46 +48,39 @@ internal static class PauseMenuUI
                 return;
             }
 
-            GameObject clone = UnityEngine.Object.Instantiate(template.gameObject, escapeMenu);
-            clone.name = ButtonName;
-            clone.transform.SetSiblingIndex(template.GetSiblingIndex() + 1);
-            clone.SetActive(true);
+            Transform save = EnsureButton(
+                escapeMenu,
+                template,
+                SaveButtonName,
+                SaveIdleText,
+                delegate { OnSaveClicked(manager); },
+                template);
 
-            RemoveLocalizers(clone);
-            RemoveStoreUI(clone);
+            Transform load = EnsureButton(
+                escapeMenu,
+                template,
+                LoadButtonName,
+                LoadIdleText,
+                delegate { OnLoadClicked(manager); },
+                save);
 
-            TextMeshProUGUI label = clone.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (label != null)
+            if (save != null && load != null)
             {
-                label.text = IdleText;
-                label.enableWordWrapping = false;
-                label.overflowMode = TextOverflowModes.Overflow;
+                EnsurePanelHeight(escapeMenu, 2);
             }
-
-            Button button = clone.GetComponent<Button>();
-            if (button != null)
-            {
-                button.onClick = new Button.ButtonClickedEvent();
-                button.onClick.AddListener(delegate { OnSaveClicked(manager); });
-            }
-
-            SaveButtonFeedback feedback = clone.AddComponent<SaveButtonFeedback>();
-            feedback.Initialize(label, IdleText);
-
-            EnsurePanelHeight(escapeMenu);
         }
         catch (Exception ex)
         {
             if (ModEntry.Log != null)
             {
-                ModEntry.Log.Warning("Could not add the pause-menu save button: " + ex);
+                ModEntry.Log.Warning("Could not add the pause-menu buttons: " + ex);
             }
         }
     }
 
     internal static void ShowSaveFeedback(bool success)
     {
-        SaveButtonFeedback feedback = FindFeedback();
+        PauseButtonFeedback feedback = FindFeedback(SaveButtonName);
         if (feedback == null)
         {
             return;
@@ -156,23 +137,20 @@ internal static class PauseMenuUI
                 return;
             }
 
-            Transform button = escapeMenu.Find(ButtonName);
-            if (button != null)
-            {
-                UnityEngine.Object.Destroy(button.gameObject);
-            }
+            DestroyButton(escapeMenu, SaveButtonName);
+            DestroyButton(escapeMenu, LoadButtonName);
 
             PauseMenuMarker marker = escapeMenu.GetComponent<PauseMenuMarker>();
             if (marker != null)
             {
-                if (marker.HeightAdjusted)
+                if (marker.HeightSteps > 0)
                 {
                     RectTransform rect = escapeMenu as RectTransform;
                     if (rect != null)
                     {
                         rect.sizeDelta = new Vector2(
                             rect.sizeDelta.x,
-                            Mathf.Max(0f, rect.sizeDelta.y - PanelHeightIncrease));
+                            Mathf.Max(0f, rect.sizeDelta.y - marker.HeightSteps * PanelHeightIncrease));
                     }
                 }
 
@@ -183,8 +161,69 @@ internal static class PauseMenuUI
         {
             if (ModEntry.Log != null)
             {
-                ModEntry.Log.Warning("Could not remove the pause-menu save button: " + ex);
+                ModEntry.Log.Warning("Could not remove the pause-menu buttons: " + ex);
             }
+        }
+    }
+
+    private static Transform EnsureButton(
+        Transform escapeMenu,
+        Transform template,
+        string buttonName,
+        string idleText,
+        Action onClick,
+        Transform after)
+    {
+        Transform existing = escapeMenu.Find(buttonName);
+        if (existing != null)
+        {
+            PauseButtonFeedback existingFeedback = existing.GetComponent<PauseButtonFeedback>();
+            if (existingFeedback != null)
+            {
+                existingFeedback.ResetLabel();
+            }
+
+            return existing;
+        }
+
+        GameObject clone = UnityEngine.Object.Instantiate(template.gameObject, escapeMenu);
+        clone.name = buttonName;
+        int siblingIndex = after != null ? after.GetSiblingIndex() + 1 : template.GetSiblingIndex() + 1;
+        clone.transform.SetSiblingIndex(siblingIndex);
+        clone.SetActive(true);
+
+        RemoveLocalizers(clone);
+        RemoveStoreUI(clone);
+
+        TextMeshProUGUI label = clone.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null)
+        {
+            label.text = idleText;
+            label.enableWordWrapping = false;
+            label.overflowMode = TextOverflowModes.Overflow;
+        }
+
+        Button button = clone.GetComponent<Button>();
+        if (button != null)
+        {
+            button.onClick = new Button.ButtonClickedEvent();
+            if (onClick != null)
+            {
+                button.onClick.AddListener(delegate { onClick(); });
+            }
+        }
+
+        PauseButtonFeedback feedback = clone.AddComponent<PauseButtonFeedback>();
+        feedback.Initialize(label, idleText);
+        return clone.transform;
+    }
+
+    private static void DestroyButton(Transform escapeMenu, string buttonName)
+    {
+        Transform button = escapeMenu.Find(buttonName);
+        if (button != null)
+        {
+            UnityEngine.Object.Destroy(button.gameObject);
         }
     }
 
@@ -192,17 +231,7 @@ internal static class PauseMenuUI
     {
         try
         {
-            if (manager != null)
-            {
-                try
-                {
-                    manager.OnAnyClick();
-                }
-                catch
-                {
-                    // A missing click sound must not block the save.
-                }
-            }
+            PlayClick(manager);
 
             if (!ModEntry.Enabled)
             {
@@ -222,7 +251,77 @@ internal static class PauseMenuUI
         }
     }
 
-    private static SaveButtonFeedback FindFeedback()
+    private static void OnLoadClicked(EscapeUIManager manager)
+    {
+        try
+        {
+            PlayClick(manager);
+
+            if (!ModEntry.Enabled)
+            {
+                return;
+            }
+
+            PauseButtonFeedback feedback = FindFeedback(LoadButtonName);
+
+            if (!ManualSaveController.HasManualSaveForCurrentRun())
+            {
+                if (feedback != null)
+                {
+                    feedback.ShowNoQuicksave();
+                }
+
+                Notify("No quicksave found for this run.", "sec");
+                return;
+            }
+
+            bool loaded = ManualSaveController.LoadManual(out string message, allowLatestFallback: false);
+            if (loaded)
+            {
+                if (feedback != null)
+                {
+                    feedback.ShowText("Loading...", 2f);
+                }
+
+                Notify(message, "default");
+            }
+            else
+            {
+                if (feedback != null)
+                {
+                    feedback.ShowLoadFailed();
+                }
+
+                Notify(message, "sec");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (ModEntry.Log != null)
+            {
+                ModEntry.Log.Warning("Pause-menu load failed: " + ex);
+            }
+        }
+    }
+
+    private static void PlayClick(EscapeUIManager manager)
+    {
+        if (manager == null)
+        {
+            return;
+        }
+
+        try
+        {
+            manager.OnAnyClick();
+        }
+        catch
+        {
+            // A missing click sound must not block the action.
+        }
+    }
+
+    private static PauseButtonFeedback FindFeedback(string buttonName)
     {
         try
         {
@@ -239,8 +338,8 @@ internal static class PauseMenuUI
                 return null;
             }
 
-            Transform button = escapeMenu.Find(ButtonName);
-            return button != null ? button.GetComponent<SaveButtonFeedback>() : null;
+            Transform button = escapeMenu.Find(buttonName);
+            return button != null ? button.GetComponent<PauseButtonFeedback>() : null;
         }
         catch
         {
@@ -248,7 +347,7 @@ internal static class PauseMenuUI
         }
     }
 
-    private static void EnsurePanelHeight(Transform escapeMenu)
+    private static void EnsurePanelHeight(Transform escapeMenu, int targetSteps)
     {
         RectTransform rect = escapeMenu as RectTransform;
         if (rect == null)
@@ -262,13 +361,21 @@ internal static class PauseMenuUI
             marker = escapeMenu.gameObject.AddComponent<PauseMenuMarker>();
         }
 
-        if (marker.HeightAdjusted)
+        if (marker.HeightSteps < 0)
+        {
+            marker.HeightSteps = 0;
+        }
+
+        if (marker.HeightSteps >= targetSteps)
         {
             return;
         }
 
-        marker.HeightAdjusted = true;
-        rect.sizeDelta = new Vector2(rect.sizeDelta.x, rect.sizeDelta.y + PanelHeightIncrease);
+        int add = targetSteps - marker.HeightSteps;
+        rect.sizeDelta = new Vector2(
+            rect.sizeDelta.x,
+            rect.sizeDelta.y + add * PanelHeightIncrease);
+        marker.HeightSteps = targetSteps;
     }
 
     private static Transform FindEscapeMenu(Transform menuPanel)

@@ -4,7 +4,7 @@ A **Probably Stolen** mod that adds manual saving and quick loading to a run.
 
 ## Features
 
-- Adds a **Save Game** button to the pause menu.
+- Adds **Save Game** and **Load Quicksave** buttons to the pause menu.
 - Press **F5** to save at any time during a run.
 - Press **F9** to load the manual save.
 - Each run keeps exactly one manual save. A new manual save replaces the
@@ -47,9 +47,11 @@ The mod targets **Probably Stolen 0.46D**.
 ## Usage
 
 - In a run, press **F5** or use **pause menu -> Save Game**.
-- Press **F9** to load the manual save.
-- If no manual save exists for the current run, F9 loads the run's latest
-  regular save instead.
+- Press **F9** or use **pause menu -> Load Quicksave** to load the manual save.
+- The pause-menu **Load Quicksave** button only loads an existing manual save.
+  If no manual save exists, it reports that and does nothing. F9 keeps the
+  convenience fallback and loads the run's latest regular save when no manual
+  save exists.
 - After a load, wait for the cooldown message before pressing F9 again. This
   prevents accidental repeated scene reloads on slower saves.
 - Change the keys in the mod's **Mods** settings or in
@@ -108,7 +110,7 @@ This produces:
 
 ```text
 dist\SaveAnytime\                  unpacked mod folder
-dist\SaveAnytime-v0.1.0.zip       release archive
+dist\SaveAnytime-v<version>.zip    release archive
 ```
 
 To build, package and install directly into the local game:
@@ -145,8 +147,10 @@ See [`RELEASING.md`](RELEASING.md) for the exact source and GitHub release flow.
   player deletes that entire playthrough.
 - F9 uses a press latch and a cooldown; the load state is cleared at
   `ModHook.OnGameLoadedLate`, after the game has finished loading.
-- The pause-menu button is cloned from the game's Options button. Its
+- Both pause-menu buttons are cloned from the game's Options button. Their
   localization components and cloned `StoreUI` are disabled so they cannot
-  overwrite the label or trigger unrelated close behaviour.
+  overwrite the labels or trigger unrelated close behaviour.
+- The pause-menu Load button uses the strict `allowLatestFallback: false` path;
+  F9 keeps the fallback to the latest regular save when no manual save exists.
 - The load-menu manual row is gold and gets a cloned `[Quicksave]` label above
   the day/money line.

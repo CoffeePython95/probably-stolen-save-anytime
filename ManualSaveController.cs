@@ -203,7 +203,7 @@ internal static class ManualSaveController
         }
     }
 
-    internal static bool LoadManual(out string message)
+    internal static bool LoadManual(out string message, bool allowLatestFallback = true)
     {
         message = null;
 
@@ -234,15 +234,20 @@ internal static class ManualSaveController
         {
             string manualPath = SaveFiles.AbsolutePath(manualFile);
             string reason;
-            if (!File.Exists(manualPath))
+            if (!SaveFiles.IsSaveFileIntact(manualPath, out reason))
             {
-                ManualHistoryStore.Remove(slotId);
-                manualFile = null;
-            }
-            else if (!SaveFiles.IsSaveFileIntact(manualPath, out reason))
-            {
-                message = "The manual save is damaged and was not loaded.";
-                return false;
+                if (reason == "missing")
+                {
+                    // FindManualFile checked the file a moment ago. If it
+                    // vanished, forget the pin and fall back to the latest
+                    // save instead of reporting a damaged manual save.
+                    ManualHistoryStore.Remove(slotId);
+                }
+                else
+                {
+                    message = "The manual save is damaged and was not loaded.";
+                    return false;
+                }
             }
             else
             {
@@ -252,17 +257,19 @@ internal static class ManualSaveController
 
         if (loadFile == null)
         {
-            string latestPath = SaveFiles.AbsolutePath(SaveFiles.Slot(slotId));
-            string reason;
-            if (!File.Exists(latestPath))
+            if (!allowLatestFallback)
             {
-                message = "No save was found for this run.";
+                message = "No quicksave found for this run.";
                 return false;
             }
 
+            string latestPath = SaveFiles.AbsolutePath(SaveFiles.Slot(slotId));
+            string reason;
             if (!SaveFiles.IsSaveFileIntact(latestPath, out reason))
             {
-                message = "The latest save is damaged and was not loaded.";
+                message = reason == "missing"
+                    ? "No save was found for this run."
+                    : "The latest save is damaged and was not loaded.";
                 return false;
             }
 
@@ -311,6 +318,29 @@ internal static class ManualSaveController
 
             return false;
         }
+    }
+
+    internal static bool HasManualSaveForCurrentRun()
+    {
+        if (!PlayerStore.HasInstance || PlayerStore.Instance == null)
+        {
+            return false;
+        }
+
+        if (NewGameData.Instance == null ||
+            NewGameData.Instance.isShowcase ||
+            NewGameData.Instance.isInMainMenu)
+        {
+            return false;
+        }
+
+        int slotId = PlayerStore.Instance.saveSlotId;
+        if (slotId < 0)
+        {
+            return false;
+        }
+
+        return !string.IsNullOrEmpty(FindManualFile(slotId));
     }
 
     private static bool SaveManualInternal(out string message)
