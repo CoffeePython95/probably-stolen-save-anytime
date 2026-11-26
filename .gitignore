@@ -19,3 +19,7 @@ Thumbs.db
 .DS_Store
 .idea/
 .vscode/
+
+# Local-only project notes and agent rules
+docs/internal/
+AGENTS.md
