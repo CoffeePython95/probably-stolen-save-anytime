@@ -5,8 +5,11 @@ A **Probably Stolen** mod that adds manual saving and quick loading to a run.
 ## Features
 
 - Adds **Save Game** and **Load Quicksave** buttons to the pause menu.
-- Press **F5** to save at any time during a run.
+- Press **F5** to save during the morning, before opening the shop.
 - Press **F9** to load the manual save.
+- Saving is deliberately limited to the morning. The game does not include the
+  live shop, current customer, counter items, or negotiation state in its save
+  files, so a save made after opening the shutter cannot be restored correctly.
 - Each run keeps exactly one manual save. A new manual save replaces the
   previous one.
 - The manual save appears as the first entry in the run's earlier-save list,
@@ -19,6 +22,26 @@ A **Probably Stolen** mod that adds manual saving and quick loading to a run.
   is in progress or while the new scene is settling.
 - Save and quick load are only active in a live shop run. The main menu and
   showcase mode do not expose the mod's save button or the F5/F9 actions.
+
+## Why saves are morning-only
+
+The game's save file stores the player store, the station, and the inventory
+contents, but it does not store the live shop session. The current customer,
+the customer queue, items on the front counter, items in negotiation windows,
+open dialogs, the open shutter, and the scene setup for an open shop are all
+left out or explicitly marked non-serializable.
+
+The game itself only autosaves in the morning, after the night ends and before
+the shop opens. Loading a save made while the shop was open leaves the scene in
+a contradictory state: the save says the shop is open, but the reloaded scene
+starts closed, with no customer queue and missing counter items. That is why
+items can be misplaced and machines or fixtures can stop responding.
+
+Because restoring the exact customer, dialog, negotiation and open-shop state
+would require reimplementing a large part of the game's runtime state, the mod
+only allows a save when the shop is in its morning state. Existing quicksaves
+created by older versions while the shop was open are refused by the mod's load
+button; make a new quicksave in the morning instead.
 
 ## Install (players)
 
@@ -46,7 +69,10 @@ The mod targets **Probably Stolen 0.46D**.
 
 ## Usage
 
-- In a run, press **F5** or use **pause menu -> Save Game**.
+- In a run, during the morning before opening the shop, press **F5** or use
+  **pause menu -> Save Game**.
+- If the shop is already open, the mod refuses to save and tells you to save
+  the next morning. The pause-menu button shows `Morning only` in that case.
 - Press **F9** or use **pause menu -> Load Quicksave** to load the manual save.
 - The pause-menu **Load Quicksave** button only loads an existing manual save.
   If no manual save exists, it reports that and does nothing. F9 keeps the

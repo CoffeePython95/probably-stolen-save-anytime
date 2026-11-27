@@ -238,6 +238,18 @@ internal static class PauseMenuUI
                 return;
             }
 
+            if (!ManualSaveController.IsMorningSaveWindow)
+            {
+                PauseButtonFeedback morningFeedback = FindFeedback(SaveButtonName);
+                if (morningFeedback != null)
+                {
+                    morningFeedback.ShowMorningOnly();
+                }
+
+                Notify(ManualSaveController.MorningOnlyMessage, "sec");
+                return;
+            }
+
             bool saved = ManualSaveController.SaveManual(out string message);
             ShowSaveFeedback(saved);
             Notify(message, saved ? "default" : "sec");

@@ -3,8 +3,8 @@
   <ID>save_anytime</ID>
   <Name>Save Anytime</Name>
   <Author>PtrkPtrk</Author>
-  <ModVersion>0.2.0</ModVersion>
-  <Description>Adds Save Game and Load Quicksave buttons to the pause menu, plus F5 save and F9 load. Each run keeps one manual save, labelled [Quicksave] at the top of its earlier-save list just below the latest save.</Description>
+  <ModVersion>0.3.0</ModVersion>
+  <Description>Adds Save Game and Load Quicksave buttons to the pause menu, plus F5 save and F9 load. Saves are made in the morning before opening the shop, where the game itself can restore them correctly. Each run keeps one manual save, labelled [Quicksave] at the top of its earlier-save list just below the latest save.</Description>
 
   <GameVersions>
     <Version>0.46D</Version>

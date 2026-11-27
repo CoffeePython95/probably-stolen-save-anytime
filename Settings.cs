@@ -41,7 +41,7 @@ internal static class Settings
             SectionKeybinds,
             () => "Save game key",
             null,
-            () => "Press this key during a run to create a manual save.");
+            () => "Press this key in the morning, before opening the shop, to create a manual save.");
 
         loadKey = config.Define(
             "load_key",
@@ -133,7 +133,7 @@ internal static class Settings
             () => "Save Game",
             () => SaveKey,
             SetSaveKey,
-            () => "Create a manual save at any time during a run.");
+            () => "Create a manual save in the morning, before opening the shop.");
 
         ModHelper.AddGameOptionKeyBind(
             ModEntry.ModId,

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -18,6 +20,23 @@ internal static class ManualSaveController
     private const string ModDataSlotKey = "manual_save_slot";
     private const string HistoryIndexPrefix = "history_";
     private const string PreviewIndexPrefix = "preview_";
+
+    internal const string MorningOnlyMessage =
+        "You can only save in the morning, before opening the shop.";
+
+    private const string OpenSaveBlockedMessage =
+        "This quicksave was made while the shop was open and cannot be loaded safely. Create a new quicksave in the morning.";
+
+    private const string NightSaveBlockedMessage =
+        "This quicksave was not made in the morning and cannot be loaded safely. Create a new quicksave in the morning.";
+
+    // The head of an ES3 save file is plain JSON. Reading only the first
+    // chunk lets the mod check a save's shop state without loading it.
+    private const int SaveStateProbeBytes = 262144;
+
+    private static readonly Regex StoreStatePattern = new Regex(
+        "\"storeState\"\\s*:\\s*(-?\\d+)",
+        RegexOptions.Compiled);
 
     // Keep the load key blocked for a few seconds after a reload starts. This
     // stops key spamming from queueing another scene load while the new scene
@@ -38,6 +57,21 @@ internal static class ManualSaveController
         {
             float now = Time.realtimeSinceStartup;
             return (loading && now - loadStartedAt < LoadTimeoutSeconds) || now < loadBlockedUntil;
+        }
+    }
+
+    /// <summary>
+    /// The game's save file only contains a reliable shop snapshot in the
+    /// morning. Mid-day saves leave the current customer, counter items,
+    /// negotiation state and open-shop scene setup behind.
+    /// </summary>
+    internal static bool IsMorningSaveWindow
+    {
+        get
+        {
+            return PlayerStore.HasInstance &&
+                   PlayerStore.Instance != null &&
+                   PlayerStore.Instance.storeState == PlayerStore.StoreState.MORNING;
         }
     }
 
@@ -182,6 +216,12 @@ internal static class ManualSaveController
             return false;
         }
 
+        if (!IsMorningSaveWindow)
+        {
+            message = MorningOnlyMessage;
+            return false;
+        }
+
         saving = true;
         try
         {
@@ -251,6 +291,15 @@ internal static class ManualSaveController
             }
             else
             {
+                int storeState;
+                if (!IsMorningSnapshot(manualPath, out storeState))
+                {
+                    message = storeState == (int)PlayerStore.StoreState.OPEN
+                        ? OpenSaveBlockedMessage
+                        : NightSaveBlockedMessage;
+                    return false;
+                }
+
                 loadFile = manualFile;
             }
         }
@@ -270,6 +319,15 @@ internal static class ManualSaveController
                 message = reason == "missing"
                     ? "No save was found for this run."
                     : "The latest save is damaged and was not loaded.";
+                return false;
+            }
+
+            int storeState;
+            if (!IsMorningSnapshot(latestPath, out storeState))
+            {
+                message = storeState == (int)PlayerStore.StoreState.OPEN
+                    ? OpenSaveBlockedMessage
+                    : NightSaveBlockedMessage;
                 return false;
             }
 
@@ -628,6 +686,56 @@ internal static class ManualSaveController
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Returns true when the save was written in the morning, where the game's
+    /// own autosaves are made. If the state cannot be read, the caller keeps
+    /// the previous behaviour instead of rejecting a potentially valid save.
+    /// </summary>
+    private static bool IsMorningSnapshot(string absolutePath, out int storeState)
+    {
+        storeState = -1;
+
+        try
+        {
+            byte[] buffer = new byte[SaveStateProbeBytes];
+            int count;
+            using (FileStream stream = new FileStream(
+                absolutePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                count = stream.Read(buffer, 0, buffer.Length);
+            }
+
+            string text = Encoding.UTF8.GetString(buffer, 0, count);
+            Match match = StoreStatePattern.Match(text);
+            if (!match.Success)
+            {
+                return true;
+            }
+
+            int parsed;
+            if (!int.TryParse(
+                match.Groups[1].Value,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out parsed))
+            {
+                return true;
+            }
+
+            storeState = parsed;
+            return parsed == (int)PlayerStore.StoreState.MORNING;
+        }
+        catch (Exception ex)
+        {
+            if (ModEntry.Log != null)
+            {
+                ModEntry.Log.Warning("Could not check the saved shop state: " + ex.Message);
+            }
+
+            return true;
+        }
     }
 
     internal static bool IsHistoryFileForSlot(string file, int slotId)

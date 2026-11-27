@@ -44,6 +44,11 @@ public sealed class PauseButtonFeedback : MonoBehaviour
         Show("Save failed", 2f);
     }
 
+    internal void ShowMorningOnly()
+    {
+        Show("Morning only", 2f);
+    }
+
     internal void ShowLoadFailed()
     {
         Show("Load failed", 2f);
